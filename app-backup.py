@@ -1,7 +1,7 @@
 import eventlet
 eventlet.monkey_patch()
 
-from flask import Flask, jsonify, request
+from flask import Flask
 from flask_socketio import SocketIO
 import time
 import random
@@ -9,7 +9,6 @@ import smbus2
 import bme280
 import RPi.GPIO as GPIO
 from datetime import datetime
-import sqlite3
 
 app = Flask(__name__)
 socketio = SocketIO(app, ping_timeout=60, ping_interval=25)
@@ -33,21 +32,6 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
 GPIO.setup(anemometer_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-def check_login(username, password):
-    conn = sqlite3.connect('monitoring.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tb_users WHERE username=? AND password=? ", (username, password))
-    user = cursor.fetchone()
-    conn.close()
-    return user
-
-def add_user(nama_lengkap, username, password):
-    conn = sqlite3.connect('monitoring.db')
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO tb_users(nama_lengkap, username, password) VALUES(?, ?, ?)", (nama_lengkap, username, password))
-    conn.commit()
-    conn.close()
 
 def celsius_to_fahrenheit(celsius):
     return (celsius * 9/5) + 32
@@ -123,34 +107,6 @@ def generate_sensor_data():
 @app.route("/")
 def hello_world():
     return "hello world"
-
-@app.route('/register', methods=['POST'])
-def process_register():
-    data_nama_lengkap   = request.form['nama_lengkap']
-    data_username       = request.form['username']
-    data_password       = request.form['password']
-    add_user(nama_lengkap = data_nama_lengkap , username = data_username, password = data_password)
-    if add_user:
-        return jsonify({'status': True, 'message': 'Registrasi Berhasil'}), 201
-    else:
-        return jsonify({'status': False, 'message': 'Registrasi Gagal'}), 200
-
-@app.route('/login', methods=['POST'])
-def process_login():
-    data_username = request.form['username']
-    data_password = request.form['password']
-
-    app.logger.debug(f'Data yang ditangkap: {data_username} {data_password}')
-
-    user = check_login(username = data_username, password = data_password)
-
-    if user:
-        return jsonify({'status': True, 'message': 'Login Berhasil'}), 200
-        #return jsonify(response), 200
-    else:
-        return jsonify({'status': False, 'message': 'Login Gagal !, Pastikan Username dan Password Benar'}), 200
-        #return jsonify(response), 401
-
 
 @socketio.on('connect')
 def handle_connect():

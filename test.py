@@ -66,7 +66,7 @@ try:
 		suhu = str(temperature)
 		cpu = str(temperature_cpu)
 		lcd.cursor_pos = (0, 0)
-		lcd.write_string("Suhu: "+suhu+" C")
+		lcd.write_string("Suhu: "+suhu)
 		lcd.cursor_pos = (1, 0)
 		lcd.write_string("CPU: "+cpu)
 		lcd.cursor_pos = (2, 0)

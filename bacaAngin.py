@@ -5,7 +5,7 @@ import time
 GPIO.setmode(GPIO.BCM)
 
 # Set pin for anemometer
-anemometer_pin = 17
+anemometer_pin = 22
 GPIO.setup(anemometer_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 # Variables to store wind speed

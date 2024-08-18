@@ -31,8 +31,8 @@ while True:
 
   pulse_duration = pulse_end - pulse_start #pulse duration to a variable
 
-  distance = pulse_duration * 17150 / 100        #Calculate distance
-  #distance = pulse_duration * 0.0343 / 2
+  #distance = pulse_duration * 17150 / 100        #Calculate distance
+  distance = pulse_duration * 34300 / 2
   distance = round(distance, 2)            #Round to two decimal points
 
   #if distance > 20 and distance < 400:     #Is distance within range

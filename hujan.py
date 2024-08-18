@@ -3,7 +3,7 @@ import time
 from datetime import datetime
 
 # Setup GPIO
-pin_interrupt = 17
+pin_interrupt = 27
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(pin_interrupt, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 

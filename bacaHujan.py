@@ -2,7 +2,7 @@ import RPi.GPIO as GPIO
 import time
 
 # Konfigurasi pin GPIO
-pin_interrupt = 14  # Sesuaikan dengan pin GPIO yang Anda gunakan
+pin_interrupt = 27  # Sesuaikan dengan pin GPIO yang Anda gunakan
 milimeter_per_tip = 0.70
 
 # Variabel global

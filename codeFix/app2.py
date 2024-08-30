@@ -174,7 +174,7 @@ def generate_sensor_data():
                 'wave_height': ultrasonic_distance,
                 'wind_speed': round(wind_speed, 2),
                 'rain_intensity': rain_intensity,
-                'timestamp': int(time.time()),
+                'timestamp': str(int(time.time())),
                 'tanggal_waktu': current_time.strftime('%Y-%m-%d %H:%M:%S')
             }
             print('Combined Data:', combined_data, datetime.now())

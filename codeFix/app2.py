@@ -23,6 +23,7 @@ calibration_params = bme280.load_calibration_params(bus, bme280_address)
 TRIG = 15
 ECHO = 14
 anemometer_pin = 22
+rain_sensor_pin = 27  # Pin untuk sensor hujan
 
 # Anemometer parameters
 rpmcount = 0
@@ -31,7 +32,13 @@ timeold = 0
 timemeasure = 10  # seconds
 flag = threading.Event()  # For managing interrupts
 
-radius = 10.5  # cm
+# Rainfall parameters
+milimeter_per_tip = 0.70
+jumlah_tip = 0
+curah_hujan = 0.00
+rain_flag = False
+
+#radius = 10.5  # cm
 interval = 1  # seconds
 background_task_started = False
 
@@ -40,6 +47,7 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(TRIG, GPIO.OUT)
 GPIO.setup(ECHO, GPIO.IN)
 GPIO.setup(anemometer_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(rain_sensor_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 def check_login(username, password):
     conn = sqlite3.connect('monitoring.db')
@@ -113,8 +121,6 @@ def calculate_wind_speed():
 
             wind_speed_km_per_h = wind_speed_meter_per_sec * 3.6
 
-            #print(f"Rotations per second: {rotations_per_sec}   Wind speed (m/s): {wind_speed_meter_per_sec:.1f}   Wind speed (km/h): {wind_speed_km_per_h:.1f}")
-
             timeold = time.time() * 1e3
             rpmcount = 0
             GPIO.add_event_detect(anemometer_pin, GPIO.RISING, callback=rpm_anemometer, bouncetime=5)
@@ -126,27 +132,45 @@ def rpm_anemometer(channel):
 
 GPIO.add_event_detect(anemometer_pin, GPIO.RISING, callback=rpm_anemometer, bouncetime=5)
 
+def hitung_curah_hujan(channel):
+    global rain_flag
+    rain_flag = True
+
+GPIO.add_event_detect(rain_sensor_pin, GPIO.FALLING, callback=hitung_curah_hujan, bouncetime=499)
+
+def read_rain_sensor():
+    global jumlah_tip, curah_hujan, rain_flag
+
+    if rain_flag:
+        curah_hujan += milimeter_per_tip
+        jumlah_tip += 1
+        rain_flag = False
+
+    curah_hujan = jumlah_tip * round(milimeter_per_tip, 2)
+    return curah_hujan
+
 def generate_sensor_data():
     global flag
     while True:
         bme280_data = read_bme280_sensor()
         ultrasonic_distance = read_ultrasonic_sensor()
-
         wind_speed = calculate_wind_speed()
+        rain_intensity = read_rain_sensor()
 
         if bme280_data and ultrasonic_distance is not None:
             combined_data = {
                 'temperature_celsius': bme280_data['temperature_celsius'],
                 'wave_height': ultrasonic_distance,
                 'wind_speed': round(wind_speed, 2),
-                'rain_intensity': round(random.uniform(1, 20), 2),
+                'rain_intensity': rain_intensity,
                 'timestamp': int(time.time())
             }
             print('Combined Data:', combined_data, datetime.now())
+            #print(rain_intensity)
             socketio.emit('update', combined_data)
         else:
             print('Error in sensor data')
-            socketio.sleep(5)
+            socketio.sleep(3)
 
 @app.route("/")
 def hello_world():

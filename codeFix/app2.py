@@ -64,6 +64,16 @@ def add_user(nama_lengkap, username, password):
     conn.commit()
     conn.close()
 
+def save_sensor_data_to_db(data):
+    conn = sqlite3.connect('monitoring.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO tb_data (suhu, tinggi_gelombang, kecepatan_angin, intensitas_hujan, tanggal_waktu)
+        VALUES (?, ?, ?, ?, ?)
+    """, (data['temperature_celsius'], data['wave_height'], data['wind_speed'], data['rain_intensity'], data['tanggal_waktu']))
+    conn.commit()
+    conn.close()
+
 def celsius_to_fahrenheit(celsius):
     return (celsius * 9/5) + 32
 
@@ -158,16 +168,19 @@ def generate_sensor_data():
         rain_intensity = read_rain_sensor()
 
         if bme280_data and ultrasonic_distance is not None:
+            current_time = datetime.now()
             combined_data = {
                 'temperature_celsius': bme280_data['temperature_celsius'],
                 'wave_height': ultrasonic_distance,
                 'wind_speed': round(wind_speed, 2),
                 'rain_intensity': rain_intensity,
-                'timestamp': int(time.time())
+                'timestamp': int(time.time()),
+                'tanggal_waktu': current_time.strftime('%Y-%m-%d %H:%M:%S')
             }
             print('Combined Data:', combined_data, datetime.now())
             #print(rain_intensity)
             socketio.emit('update', combined_data)
+            save_sensor_data_to_db(combined_data)
         else:
             print('Error in sensor data')
             socketio.sleep(3)

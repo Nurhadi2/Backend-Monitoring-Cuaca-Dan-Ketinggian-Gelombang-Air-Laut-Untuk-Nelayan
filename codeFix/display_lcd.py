@@ -80,7 +80,7 @@ try:
 		cpu = str(temperature_cpu)
 		#internal_temp_str = str(interal_temperature_celsius)
 		lcd.cursor_pos = (0, 0)
-		lcd.write_string("Suhu Laut: "+suhu)
+		lcd.write_string("Suhu: "+suhu)
 		lcd.cursor_pos = (1, 0)
 		lcd.write_string("CPU: "+cpu)
 		lcd.cursor_pos = (2, 0)

@@ -8,7 +8,7 @@ import random
 import smbus2
 import bme280
 import RPi.GPIO as GPIO
-from datetime import datetime
+from datetime import datetime, timedelta
 import sqlite3
 import threading
 
@@ -29,7 +29,7 @@ rain_sensor_pin = 27  # Pin untuk sensor hujan
 rpmcount = 0
 last_micros = 0
 timeold = 0
-timemeasure = 10  # seconds
+timemeasure = 30  # seconds
 flag = threading.Event()  # For managing interrupts
 
 # Rainfall parameters
@@ -103,7 +103,7 @@ def read_ultrasonic_sensor():
 
         pulse_duration = pulse_end - pulse_start
         distance = pulse_duration * 17150 / 100
-        distance = round(distance, 2)
+        distance = 4.06 - distance
 
         return distance
     except Exception as e:
@@ -156,8 +156,21 @@ def read_rain_sensor():
         jumlah_tip += 1
         rain_flag = False
 
-    curah_hujan = jumlah_tip * round(milimeter_per_tip, 2)
+    curah_hujan = jumlah_tip * milimeter_per_tip
     return curah_hujan
+
+def reset_rainfall_at_midnight():
+    global jumlah_tip, curah_hujan
+    while True:
+        current_time = datetime.now()
+        next_midnight = (current_time + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        sleep_time = (next_midnight - current_time).total_seconds()
+        time.sleep(sleep_time)
+
+        # Reset rainfall data
+        jumlah_tip = 0
+        curah_hujan = 0.00
+        print('Rainfall data reset at midnight')
 
 def generate_sensor_data():
     global flag
@@ -170,10 +183,10 @@ def generate_sensor_data():
         if bme280_data and ultrasonic_distance is not None:
             current_time = datetime.now()
             combined_data = {
-                'temperature_celsius': bme280_data['temperature_celsius'],
-                'wave_height': ultrasonic_distance,
-                'wind_speed': round(wind_speed, 2),
-                'rain_intensity': rain_intensity,
+                'temperature_celsius': "{:.2f}".format(bme280_data['temperature_celsius']),
+                'wave_height': "{:.2f}".format(ultrasonic_distance),
+                'wind_speed': "{:.2f}".format(wind_speed),
+                'rain_intensity': "{:.2f}".format(rain_intensity),
                 'timestamp': str(int(time.time())),
                 'tanggal_waktu': current_time.strftime('%Y-%m-%d %H:%M:%S')
             }
@@ -183,7 +196,8 @@ def generate_sensor_data():
             save_sensor_data_to_db(combined_data)
         else:
             print('Error in sensor data')
-            socketio.sleep(3)
+
+        socketio.sleep(2)
 
 @app.route("/")
 def hello_world():
@@ -217,6 +231,7 @@ def handle_connect():
     print('Client connected')
     if not background_task_started:
         background_task_started = True
+        threading.Thread(target=reset_rainfall_at_midnight, daemon=True).start()
         socketio.start_background_task(generate_sensor_data)
 
 @socketio.on('disconnect')
